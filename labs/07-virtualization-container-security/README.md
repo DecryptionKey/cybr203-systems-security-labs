@@ -5,6 +5,7 @@ Deployed a second VM with full-disk encryption, then ran an Nginx container on i
 
 ## Objectives
 - Deploy a VM and a container securely
+- Harden the VM host and measure the result with Lynis
 
 ## Environment / Tools
 - Ubuntu 24.04 LTS VM with LUKS + LVM full-disk encryption
@@ -37,6 +38,36 @@ docker run -d -p 80:80 -u 1000:1000 nginxinc/nginx-unprivileged
 ![Non-root confirmation](images/non-root-confirmation.png)
 ![docker ps showing only port 80](images/docker-ps.png)
 
+### 5. Harden the VM host
+Before comparing the two, I hardened the Ubuntu VM against CIS-style recommendations and measured it with Lynis. The recordings below are sped up.
+
+| Step | What I did |
+|------|------------|
+| Updates | Full `apt` upgrade and `unattended-upgrades` for automatic security patches |
+| Tooling | Installed the hardening and audit tools used in the rest of the steps |
+| Attack surface | Removed LXD, which the VM didn't need |
+| SSH | Tightened `/etc/ssh/sshd_config` (agent and X11 forwarding off, among other settings) and added a warning banner |
+| Firewall | UFW with default deny incoming, only the needed ports allowed |
+| Accounts | Password quality rules in `pwquality.conf` and account lockout after failed logins |
+| Kernel | `sysctl` settings for network and memory protections, applied with `sysctl --system` |
+| File systems | Hardened mount options in `/etc/fstab` |
+| Auditing | Enabled and started `auditd` |
+
+| | |
+|---|---|
+| ![Updates and patches](images/hardening/updates-and-patches.gif) | ![SSH hardening](images/hardening/ssh-hardening.gif) |
+| System updates | SSH hardening |
+| ![UFW firewall](images/hardening/ufw-firewall.gif) | ![Kernel hardening](images/hardening/kernel-hardening.gif) |
+| UFW firewall | Kernel `sysctl` hardening |
+| ![Password policy](images/hardening/password-policy.gif) | ![Account lockout](images/hardening/account-lockout.gif) |
+| Password policy | Account lockout and banner |
+| ![File system hardening](images/hardening/filesystem-hardening.gif) | ![Enable auditing](images/hardening/enable-auditing.gif) |
+| File system mount options | Enabling `auditd` |
+| ![Install hardening tools](images/hardening/install-hardening-tools.gif) | ![Remove LXD](images/hardening/remove-lxd.gif) |
+| Installing hardening tools | Removing LXD |
+| ![Login banner](images/hardening/login-banner.gif) | ![Apply sysctl changes](images/hardening/apply-changes.gif) |
+| Login warning banner | Applying kernel settings |
+
 ## Findings
 ![Container configuration](images/container-config.png)
 
@@ -49,4 +80,4 @@ Getting the VM close to CIS compliance took a lot of steps (disabling services, 
 - Containers and VMs aren't either/or. Each one covers gaps in the other.
 
 ## Skills demonstrated
-Docker / container security, full-disk encryption, defense in depth, NIST SP 800-125
+Docker / container security, Linux hardening (SSH, UFW, sysctl, auditd), Lynis, full-disk encryption, defense in depth, NIST SP 800-125
